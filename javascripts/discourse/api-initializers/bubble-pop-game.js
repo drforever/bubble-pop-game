@@ -8,6 +8,9 @@ export default apiInitializer("1.0.0", (api) => {
   const title = settings.bubble_title || "解压一下 🫧";
 
   let gameInserted = false;
+  
+  // 泡泡颜色列表
+  const bubbleColors = ['pink', 'orange', 'yellow', 'green', 'blue', 'purple', 'cyan'];
 
   // 生成不重叠的随机位置
   function generateBubblePositions(count, containerWidth, containerHeight) {
@@ -46,7 +49,7 @@ export default apiInitializer("1.0.0", (api) => {
             y, 
             size,
             animationDelay: Math.random() * 2,
-            isRainbow: Math.random() < 0.15 // 15% 概率彩虹泡泡
+            color: bubbleColors[Math.floor(Math.random() * bubbleColors.length)]
           });
           placed = true;
         }
@@ -61,7 +64,7 @@ export default apiInitializer("1.0.0", (api) => {
           y: padding + Math.random() * (containerHeight - size - padding * 2),
           size,
           animationDelay: Math.random() * 2,
-          isRainbow: false
+          color: bubbleColors[Math.floor(Math.random() * bubbleColors.length)]
         });
       }
     }
@@ -76,6 +79,9 @@ export default apiInitializer("1.0.0", (api) => {
     const centerX = rect.left - containerRect.left + rect.width / 2;
     const centerY = rect.top - containerRect.top + rect.height / 2;
     
+    // 获取泡泡颜色
+    const colorClass = Array.from(bubble.classList).find(c => c.startsWith('color-')) || 'color-blue';
+    
     const splash = document.createElement("div");
     splash.className = "bubble-splash";
     splash.style.left = centerX + "px";
@@ -85,7 +91,7 @@ export default apiInitializer("1.0.0", (api) => {
     const dropCount = 8 + Math.floor(Math.random() * 5);
     for (let i = 0; i < dropCount; i++) {
       const drop = document.createElement("div");
-      drop.className = "splash-drop";
+      drop.className = "splash-drop " + colorClass;
       
       // 随机方向和距离
       const angle = (Math.PI * 2 * i) / dropCount + (Math.random() - 0.5) * 0.5;
@@ -191,7 +197,7 @@ export default apiInitializer("1.0.0", (api) => {
     const positions = generateBubblePositions(bubbleCount, containerWidth, containerHeight);
     positions.forEach((pos, index) => {
       const bubble = document.createElement("div");
-      bubble.className = "bubble" + (pos.isRainbow ? " rainbow" : "");
+      bubble.className = "bubble color-" + pos.color;
       bubble.style.left = pos.x + "px";
       bubble.style.top = pos.y + "px";
       bubble.style.width = pos.size + "px";
@@ -270,7 +276,7 @@ export default apiInitializer("1.0.0", (api) => {
       const positions = generateBubblePositions(bubbleCount, containerWidth, containerHeight);
       positions.forEach((pos, index) => {
         const bubble = document.createElement("div");
-        bubble.className = "bubble" + (pos.isRainbow ? " rainbow" : "");
+        bubble.className = "bubble color-" + pos.color;
         bubble.style.left = pos.x + "px";
         bubble.style.top = pos.y + "px";
         bubble.style.width = pos.size + "px";
