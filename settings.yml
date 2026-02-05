@@ -1,0 +1,23 @@
+bubble_game_enabled:
+  default: true
+  type: bool
+  description: "启用捏泡泡小游戏"
+
+bubble_rows:
+  default: 5
+  type: integer
+  min: 3
+  max: 10
+  description: "泡泡行数"
+
+bubble_cols:
+  default: 8
+  type: integer
+  min: 4
+  max: 12
+  description: "泡泡列数"
+
+bubble_title:
+  default: "解压一下 🫧"
+  type: string
+  description: "游戏标题"

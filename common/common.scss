@@ -1,0 +1,158 @@
+/* 捏泡泡游戏容器 */
+.bubble-pop-game {
+  margin: 1em 0.5em;
+  padding: 1em;
+  background: var(--primary-very-low);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bubble-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8em;
+}
+
+.bubble-game-title {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+}
+
+.bubble-reset-btn {
+  font-size: 0.75em;
+  padding: 0.3em 0.6em;
+  background: var(--tertiary);
+  color: var(--secondary);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--tertiary-hover);
+    transform: scale(1.05);
+  }
+}
+
+.bubble-grid {
+  display: grid;
+  gap: 4px;
+  justify-content: center;
+}
+
+.bubble {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  
+  /* 泡泡未被捏的状态 - 凸起效果 */
+  &.intact {
+    background: linear-gradient(145deg, #e6f3ff, #b3d9ff);
+    box-shadow: 
+      3px 3px 6px rgba(0, 0, 0, 0.15),
+      -2px -2px 4px rgba(255, 255, 255, 0.8),
+      inset -2px -2px 4px rgba(0, 0, 0, 0.05),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.5);
+    
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        4px 4px 8px rgba(0, 0, 0, 0.2),
+        -2px -2px 4px rgba(255, 255, 255, 0.9),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.05),
+        inset 2px 2px 4px rgba(255, 255, 255, 0.5);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+    
+    /* 高光效果 */
+    &::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      width: 6px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+    }
+  }
+  
+  /* 泡泡被捏后的状态 - 凹陷效果 */
+  &.popped {
+    background: linear-gradient(145deg, #d0d0d0, #e8e8e8);
+    box-shadow: 
+      inset 3px 3px 6px rgba(0, 0, 0, 0.15),
+      inset -2px -2px 4px rgba(255, 255, 255, 0.5);
+    cursor: default;
+    
+    &::after {
+      display: none;
+    }
+  }
+}
+
+/* 捏泡泡动画 */
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(0.9);
+  }
+}
+
+.bubble.popping {
+  animation: pop 0.15s ease-out;
+}
+
+/* 进度条 */
+.bubble-progress {
+  margin-top: 0.8em;
+  text-align: center;
+}
+
+.bubble-progress-bar {
+  height: 6px;
+  background: var(--primary-low);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.4em;
+}
+
+.bubble-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tertiary), var(--success));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.bubble-progress-text {
+  font-size: 0.75em;
+  color: var(--primary-medium);
+}
+
+/* 完成提示 */
+.bubble-complete {
+  text-align: center;
+  padding: 0.5em;
+  font-size: 0.85em;
+  color: var(--success);
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
