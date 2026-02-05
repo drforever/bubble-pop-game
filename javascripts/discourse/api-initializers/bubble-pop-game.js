@@ -15,9 +15,9 @@ export default apiInitializer("1.0.0", (api) => {
   // 生成不重叠的随机位置
   function generateBubblePositions(count, containerWidth, containerHeight) {
     const positions = [];
-    const minSize = 20;
-    const maxSize = 38;
-    const padding = 5;
+    const minSize = 18;
+    const maxSize = 32;
+    const padding = 8; // 增加边距
     const maxAttempts = 100;
 
     for (let i = 0; i < count; i++) {
@@ -35,7 +35,7 @@ export default apiInitializer("1.0.0", (api) => {
           const dx = x + size/2 - (pos.x + pos.size/2);
           const dy = y + size/2 - (pos.y + pos.size/2);
           const distance = Math.sqrt(dx*dx + dy*dy);
-          const minDistance = (size + pos.size) / 2 + 3; // 3px 间距
+          const minDistance = (size + pos.size) / 2 + 2; // 2px 间距
           
           if (distance < minDistance) {
             overlapping = true;
