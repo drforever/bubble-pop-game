@@ -163,8 +163,7 @@ export default apiInitializer("1.0.0", (api) => {
   }
 
   function createBubbleGame() {
-    const containerWidth = 200;
-    const containerHeight = 120;
+    const containerHeight = 140;
     
     const container = document.createElement("div");
     container.className = "bubble-pop-game";
@@ -181,7 +180,6 @@ export default apiInitializer("1.0.0", (api) => {
     const resetBtn = document.createElement("button");
     resetBtn.className = "bubble-reset-btn";
     resetBtn.textContent = "重置";
-    resetBtn.onclick = () => resetGame(container, containerWidth, containerHeight);
     
     header.appendChild(titleEl);
     header.appendChild(resetBtn);
@@ -190,24 +188,7 @@ export default apiInitializer("1.0.0", (api) => {
     // 泡泡容器
     const bubbleContainer = document.createElement("div");
     bubbleContainer.className = "bubble-container";
-    bubbleContainer.style.width = containerWidth + "px";
     bubbleContainer.style.height = containerHeight + "px";
-    
-    // 生成泡泡
-    const positions = generateBubblePositions(bubbleCount, containerWidth, containerHeight);
-    positions.forEach((pos, index) => {
-      const bubble = document.createElement("div");
-      bubble.className = "bubble color-" + pos.color;
-      bubble.style.left = pos.x + "px";
-      bubble.style.top = pos.y + "px";
-      bubble.style.width = pos.size + "px";
-      bubble.style.height = pos.size + "px";
-      bubble.style.animationDelay = pos.animationDelay + "s";
-      bubble.dataset.index = index;
-      
-      bubble.onclick = () => popBubble(bubble, bubbleContainer, container);
-      bubbleContainer.appendChild(bubble);
-    });
     
     container.appendChild(bubbleContainer);
 
@@ -222,7 +203,37 @@ export default apiInitializer("1.0.0", (api) => {
     `;
     container.appendChild(progress);
 
+    // 延迟生成泡泡，等容器渲染后获取实际宽度
+    setTimeout(() => {
+      const actualWidth = bubbleContainer.offsetWidth || 200;
+      initBubbles(bubbleContainer, container, actualWidth, containerHeight);
+      
+      // 绑定重置按钮
+      resetBtn.onclick = () => resetGame(container, actualWidth, containerHeight);
+    }, 50);
+
     return container;
+  }
+
+  function initBubbles(bubbleContainer, gameContainer, containerWidth, containerHeight) {
+    // 清空现有泡泡
+    bubbleContainer.innerHTML = '';
+    
+    // 生成泡泡
+    const positions = generateBubblePositions(bubbleCount, containerWidth, containerHeight);
+    positions.forEach((pos, index) => {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble color-" + pos.color;
+      bubble.style.left = pos.x + "px";
+      bubble.style.top = pos.y + "px";
+      bubble.style.width = pos.size + "px";
+      bubble.style.height = pos.size + "px";
+      bubble.style.animationDelay = pos.animationDelay + "s";
+      bubble.dataset.index = index;
+      
+      bubble.onclick = () => popBubble(bubble, bubbleContainer, gameContainer);
+      bubbleContainer.appendChild(bubble);
+    });
   }
 
   function popBubble(bubble, bubbleContainer, gameContainer) {
@@ -264,31 +275,12 @@ export default apiInitializer("1.0.0", (api) => {
   }
 
   function resetGame(container, containerWidth, containerHeight) {
-    // 移除旧的泡泡容器
-    const oldBubbleContainer = container.querySelector(".bubble-container");
-    if (oldBubbleContainer) {
-      const newBubbleContainer = document.createElement("div");
-      newBubbleContainer.className = "bubble-container";
-      newBubbleContainer.style.width = containerWidth + "px";
-      newBubbleContainer.style.height = containerHeight + "px";
-      
-      // 重新生成泡泡
-      const positions = generateBubblePositions(bubbleCount, containerWidth, containerHeight);
-      positions.forEach((pos, index) => {
-        const bubble = document.createElement("div");
-        bubble.className = "bubble color-" + pos.color;
-        bubble.style.left = pos.x + "px";
-        bubble.style.top = pos.y + "px";
-        bubble.style.width = pos.size + "px";
-        bubble.style.height = pos.size + "px";
-        bubble.style.animationDelay = pos.animationDelay + "s";
-        bubble.dataset.index = index;
-        
-        bubble.onclick = () => popBubble(bubble, newBubbleContainer, container);
-        newBubbleContainer.appendChild(bubble);
-      });
-      
-      oldBubbleContainer.replaceWith(newBubbleContainer);
+    // 获取泡泡容器
+    const bubbleContainer = container.querySelector(".bubble-container");
+    if (bubbleContainer) {
+      // 获取实际宽度
+      const actualWidth = bubbleContainer.offsetWidth || containerWidth;
+      initBubbles(bubbleContainer, container, actualWidth, containerHeight);
     }
 
     // 重置进度

@@ -48,11 +48,12 @@
   }
 }
 
-/* 泡泡容器 - 不规则布局 */
+/* 泡泡容器 - 自适应宽度 */
 .bubble-container {
   position: relative;
-  min-height: 120px;
-  max-height: 140px;
+  width: 100%;
+  min-height: 140px;
+  max-height: 160px;
   margin: 0.5em 0;
   overflow: hidden; /* 防止泡泡超出边界 */
 }
