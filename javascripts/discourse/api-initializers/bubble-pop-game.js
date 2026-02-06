@@ -164,7 +164,7 @@ export default apiInitializer("1.0.0", (api) => {
 
   function createBubbleGame() {
     const containerWidth = 200;
-    const containerHeight = 180;
+    const containerHeight = 120;
     
     const container = document.createElement("div");
     container.className = "bubble-pop-game";

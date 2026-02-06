@@ -51,7 +51,8 @@
 /* 泡泡容器 - 不规则布局 */
 .bubble-container {
   position: relative;
-  min-height: 180px;
+  min-height: 120px;
+  max-height: 140px;
   margin: 0.5em 0;
   overflow: hidden; /* 防止泡泡超出边界 */
 }
