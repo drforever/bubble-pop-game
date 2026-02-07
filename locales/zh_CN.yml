@@ -3,6 +3,5 @@ zh_CN:
     description: "侧边栏捏泡泡解压小游戏"
     settings:
       bubble_game_enabled: "启用捏泡泡游戏"
-      bubble_rows: "泡泡行数"
-      bubble_cols: "泡泡列数"
+      bubble_count: "泡泡数量"
       bubble_title: "游戏标题"

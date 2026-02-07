@@ -3,6 +3,5 @@ en:
     description: "A fun bubble pop game in the sidebar for stress relief"
     settings:
       bubble_game_enabled: "Enable the bubble pop game"
-      bubble_rows: "Number of bubble rows"
-      bubble_cols: "Number of bubble columns"
+      bubble_count: "Number of bubbles"
       bubble_title: "Game title"

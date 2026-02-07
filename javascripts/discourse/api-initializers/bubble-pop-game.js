@@ -8,163 +8,223 @@ export default apiInitializer("1.0.0", (api) => {
   const title = settings.bubble_title || "解压一下 🫧";
 
   let gameInserted = false;
-  
-  // 泡泡颜色列表
-  const bubbleColors = ['pink', 'orange', 'yellow', 'green', 'blue', 'purple', 'cyan'];
+  let audioContext = null;
+  let currentObserver = null;
+
+  // 泡泡颜色
+  const bubbleColors = [
+    "rose",
+    "peach",
+    "lemon",
+    "mint",
+    "sky",
+    "lilac",
+    "coral",
+  ];
+
+  // combo 状态
+  let comboCount = 0;
+  let comboTimer = null;
+  const COMBO_TIMEOUT = 800; // ms 内连续点击算 combo
+
+  function getAudioContext() {
+    if (!audioContext) {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        // 静默
+      }
+    }
+    return audioContext;
+  }
 
   // 生成不重叠的随机位置
   function generateBubblePositions(count, containerWidth, containerHeight) {
     const positions = [];
-    const minSize = 18;
-    const maxSize = 32;
-    const padding = 8; // 增加边距
-    const maxAttempts = 100;
+    const minSize = 20;
+    const maxSize = 36;
+    const padding = 6;
+    const maxAttempts = 120;
 
     for (let i = 0; i < count; i++) {
       let placed = false;
       let attempts = 0;
-      
+
       while (!placed && attempts < maxAttempts) {
         const size = minSize + Math.random() * (maxSize - minSize);
-        const x = padding + Math.random() * (containerWidth - size - padding * 2);
-        const y = padding + Math.random() * (containerHeight - size - padding * 2);
-        
-        // 检查是否与已有泡泡重叠
+        const x =
+          padding + Math.random() * (containerWidth - size - padding * 2);
+        const y =
+          padding + Math.random() * (containerHeight - size - padding * 2);
+
         let overlapping = false;
         for (const pos of positions) {
-          const dx = x + size/2 - (pos.x + pos.size/2);
-          const dy = y + size/2 - (pos.y + pos.size/2);
-          const distance = Math.sqrt(dx*dx + dy*dy);
-          const minDistance = (size + pos.size) / 2 + 2; // 2px 间距
-          
+          const dx = x + size / 2 - (pos.x + pos.size / 2);
+          const dy = y + size / 2 - (pos.y + pos.size / 2);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDistance = (size + pos.size) / 2 + 3;
+
           if (distance < minDistance) {
             overlapping = true;
             break;
           }
         }
-        
+
         if (!overlapping) {
-          positions.push({ 
-            x, 
-            y, 
+          positions.push({
+            x,
+            y,
             size,
-            animationDelay: Math.random() * 2,
-            color: bubbleColors[Math.floor(Math.random() * bubbleColors.length)]
+            animationDelay: Math.random() * 3,
+            color: bubbleColors[Math.floor(Math.random() * bubbleColors.length)],
           });
           placed = true;
         }
         attempts++;
       }
-      
-      // 如果实在放不下，强制放置一个小泡泡
+
       if (!placed) {
         const size = minSize;
         positions.push({
           x: padding + Math.random() * (containerWidth - size - padding * 2),
           y: padding + Math.random() * (containerHeight - size - padding * 2),
           size,
-          animationDelay: Math.random() * 2,
-          color: bubbleColors[Math.floor(Math.random() * bubbleColors.length)]
+          animationDelay: Math.random() * 3,
+          color: bubbleColors[Math.floor(Math.random() * bubbleColors.length)],
         });
       }
     }
-    
+
     return positions;
   }
 
-  // 创建飞溅水滴效果
+  // 飞溅水滴
   function createSplashEffect(bubble, container) {
     const rect = bubble.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const centerX = rect.left - containerRect.left + rect.width / 2;
     const centerY = rect.top - containerRect.top + rect.height / 2;
-    
-    // 获取泡泡颜色
-    const colorClass = Array.from(bubble.classList).find(c => c.startsWith('color-')) || 'color-blue';
-    
+
+    const colorClass =
+      Array.from(bubble.classList).find((c) => c.startsWith("color-")) ||
+      "color-sky";
+
     const splash = document.createElement("div");
     splash.className = "bubble-splash";
     splash.style.left = centerX + "px";
     splash.style.top = centerY + "px";
-    
-    // 创建 8-12 个水滴
-    const dropCount = 8 + Math.floor(Math.random() * 5);
+
+    const dropCount = 6 + Math.floor(Math.random() * 6);
     for (let i = 0; i < dropCount; i++) {
       const drop = document.createElement("div");
       drop.className = "splash-drop " + colorClass;
-      
-      // 随机方向和距离
-      const angle = (Math.PI * 2 * i) / dropCount + (Math.random() - 0.5) * 0.5;
-      const distance = 20 + Math.random() * 30;
+
+      const angle =
+        (Math.PI * 2 * i) / dropCount + (Math.random() - 0.5) * 0.5;
+      const distance = 15 + Math.random() * 25;
       const endX = Math.cos(angle) * distance;
       const endY = Math.sin(angle) * distance;
-      
-      // 随机大小
-      const scale = 0.5 + Math.random() * 0.8;
+
+      const scale = 0.4 + Math.random() * 0.7;
       drop.style.transform = `scale(${scale})`;
-      
-      // 设置动画终点
-      drop.style.setProperty("--end-x", endX + "px");
-      drop.style.setProperty("--end-y", endY + "px");
-      drop.animate([
-        { transform: `translate(0, 0) scale(${scale})`, opacity: 1 },
-        { transform: `translate(${endX}px, ${endY}px) scale(${scale * 0.3})`, opacity: 0 }
-      ], {
-        duration: 300 + Math.random() * 200,
-        easing: "ease-out",
-        fill: "forwards"
-      });
-      
+
+      drop.animate(
+        [
+          { transform: `translate(0, 0) scale(${scale})`, opacity: 1 },
+          {
+            transform: `translate(${endX}px, ${endY}px) scale(${scale * 0.2})`,
+            opacity: 0,
+          },
+        ],
+        {
+          duration: 250 + Math.random() * 200,
+          easing: "ease-out",
+          fill: "forwards",
+        }
+      );
+
       splash.appendChild(drop);
     }
-    
+
     container.appendChild(splash);
-    
-    // 移除飞溅效果
-    setTimeout(() => splash.remove(), 600);
+    setTimeout(() => splash.remove(), 500);
   }
 
-  // 播放更逼真的破裂音效
-  function playPopSound() {
+  // combo 文字飘出
+  function showComboText(bubble, container, combo) {
+    if (combo < 2) return;
+
+    const rect = bubble.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const x = rect.left - containerRect.left + rect.width / 2;
+    const y = rect.top - containerRect.top;
+
+    const el = document.createElement("div");
+    el.className = "bubble-combo-text";
+    if (combo >= 10) {
+      el.classList.add("combo-legendary");
+    } else if (combo >= 5) {
+      el.classList.add("combo-great");
+    }
+    el.textContent =
+      combo >= 10
+        ? `🔥 ${combo}x COMBO!`
+        : combo >= 5
+          ? `⚡ ${combo}x Combo!`
+          : `${combo}x`;
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 700);
+  }
+
+  // 音效 - 复用 AudioContext
+  function playPopSound(combo) {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      // 创建噪声
-      const bufferSize = audioContext.sampleRate * 0.1;
-      const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-      const data = buffer.getChannelData(0);
-      
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.1));
+      if (ctx.state === "suspended") {
+        ctx.resume();
       }
-      
-      const noise = audioContext.createBufferSource();
+
+      const bufferSize = ctx.sampleRate * 0.08;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.08));
+      }
+
+      const noise = ctx.createBufferSource();
       noise.buffer = buffer;
-      
-      // 滤波器让声音更像泡泡破裂
-      const filter = audioContext.createBiquadFilter();
+
+      const filter = ctx.createBiquadFilter();
       filter.type = "bandpass";
-      filter.frequency.value = 800 + Math.random() * 400;
-      filter.Q.value = 1;
-      
-      const gainNode = audioContext.createGain();
-      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
+      // combo 越高音调越高
+      filter.frequency.value = 700 + Math.min(combo, 15) * 80 + Math.random() * 200;
+      filter.Q.value = 1.5;
+
+      const gainNode = ctx.createGain();
+      const volume = Math.min(0.12 + combo * 0.01, 0.25);
+      gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
       noise.connect(filter);
       filter.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
+      gainNode.connect(ctx.destination);
+
       noise.start();
-      noise.stop(audioContext.currentTime + 0.1);
+      noise.stop(ctx.currentTime + 0.08);
     } catch (e) {
-      // 静默处理
+      // 静默
     }
   }
 
   function createBubbleGame() {
-    const containerHeight = 140;
-    
+    const containerHeight = 150;
+
     const container = document.createElement("div");
     container.className = "bubble-pop-game";
     container.id = "bubble-pop-game";
@@ -172,24 +232,33 @@ export default apiInitializer("1.0.0", (api) => {
     // 头部
     const header = document.createElement("div");
     header.className = "bubble-game-header";
-    
+
     const titleEl = document.createElement("h4");
     titleEl.className = "bubble-game-title";
     titleEl.textContent = title;
-    
+
+    const headerRight = document.createElement("div");
+    headerRight.className = "bubble-game-header-right";
+
+    const comboEl = document.createElement("span");
+    comboEl.className = "bubble-combo-badge hidden";
+    comboEl.textContent = "";
+
     const resetBtn = document.createElement("button");
     resetBtn.className = "bubble-reset-btn";
-    resetBtn.textContent = "重置";
-    
+    resetBtn.textContent = "↻";
+    resetBtn.title = "重置";
+
+    headerRight.appendChild(comboEl);
+    headerRight.appendChild(resetBtn);
     header.appendChild(titleEl);
-    header.appendChild(resetBtn);
+    header.appendChild(headerRight);
     container.appendChild(header);
 
     // 泡泡容器
     const bubbleContainer = document.createElement("div");
     bubbleContainer.className = "bubble-container";
     bubbleContainer.style.height = containerHeight + "px";
-    
     container.appendChild(bubbleContainer);
 
     // 进度条
@@ -203,24 +272,37 @@ export default apiInitializer("1.0.0", (api) => {
     `;
     container.appendChild(progress);
 
-    // 延迟生成泡泡，等容器渲染后获取实际宽度
-    setTimeout(() => {
-      const actualWidth = bubbleContainer.offsetWidth || 200;
-      initBubbles(bubbleContainer, container, actualWidth, containerHeight);
-      
-      // 绑定重置按钮
-      resetBtn.onclick = () => resetGame(container, actualWidth, containerHeight);
-    }, 50);
+    // 等容器渲染后再生成泡泡
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const actualWidth = bubbleContainer.offsetWidth || 200;
+        initBubbles(bubbleContainer, container, actualWidth, containerHeight);
+
+        resetBtn.onclick = () => {
+          comboCount = 0;
+          clearTimeout(comboTimer);
+          updateComboBadge(container);
+          resetGame(container, actualWidth, containerHeight);
+        };
+      });
+    });
 
     return container;
   }
 
-  function initBubbles(bubbleContainer, gameContainer, containerWidth, containerHeight) {
-    // 清空现有泡泡
-    bubbleContainer.innerHTML = '';
-    
-    // 生成泡泡
-    const positions = generateBubblePositions(bubbleCount, containerWidth, containerHeight);
+  function initBubbles(
+    bubbleContainer,
+    gameContainer,
+    containerWidth,
+    containerHeight
+  ) {
+    bubbleContainer.innerHTML = "";
+
+    const positions = generateBubblePositions(
+      bubbleCount,
+      containerWidth,
+      containerHeight
+    );
     positions.forEach((pos, index) => {
       const bubble = document.createElement("div");
       bubble.className = "bubble color-" + pos.color;
@@ -230,8 +312,9 @@ export default apiInitializer("1.0.0", (api) => {
       bubble.style.height = pos.size + "px";
       bubble.style.animationDelay = pos.animationDelay + "s";
       bubble.dataset.index = index;
-      
-      bubble.onclick = () => popBubble(bubble, bubbleContainer, gameContainer);
+
+      bubble.onclick = () =>
+        popBubble(bubble, bubbleContainer, gameContainer);
       bubbleContainer.appendChild(bubble);
     });
   }
@@ -239,17 +322,40 @@ export default apiInitializer("1.0.0", (api) => {
   function popBubble(bubble, bubbleContainer, gameContainer) {
     if (bubble.classList.contains("popped")) return;
 
-    // 播放音效
-    playPopSound();
-    
-    // 创建飞溅效果
+    // combo 计算
+    clearTimeout(comboTimer);
+    comboCount++;
+    comboTimer = setTimeout(() => {
+      comboCount = 0;
+      updateComboBadge(gameContainer);
+    }, COMBO_TIMEOUT);
+
+    playPopSound(comboCount);
     createSplashEffect(bubble, bubbleContainer);
-    
-    // 添加破裂动画
+    showComboText(bubble, bubbleContainer, comboCount);
+    updateComboBadge(gameContainer);
+
     bubble.classList.add("popped");
-    
-    // 更新进度
     updateProgress(gameContainer);
+  }
+
+  function updateComboBadge(container) {
+    const badge = container.querySelector(".bubble-combo-badge");
+    if (!badge) return;
+
+    if (comboCount >= 2) {
+      badge.classList.remove("hidden");
+      badge.textContent = `${comboCount}x`;
+      if (comboCount >= 10) {
+        badge.className = "bubble-combo-badge combo-legendary";
+      } else if (comboCount >= 5) {
+        badge.className = "bubble-combo-badge combo-great";
+      } else {
+        badge.className = "bubble-combo-badge";
+      }
+    } else {
+      badge.classList.add("hidden");
+    }
   }
 
   function updateProgress(container) {
@@ -258,11 +364,10 @@ export default apiInitializer("1.0.0", (api) => {
 
     const fill = container.querySelector(".bubble-progress-fill");
     const text = container.querySelector(".bubble-progress-text");
-    
+
     if (fill) fill.style.width = `${percentage}%`;
     if (text) text.textContent = `${popped} / ${bubbleCount}`;
 
-    // 全部捏完
     if (popped === bubbleCount) {
       const progress = container.querySelector(".bubble-progress");
       if (progress && !container.querySelector(".bubble-complete")) {
@@ -270,62 +375,123 @@ export default apiInitializer("1.0.0", (api) => {
         complete.className = "bubble-complete";
         complete.textContent = "🎉 全部捏完啦！感觉好解压~";
         progress.appendChild(complete);
+
+        // 撒花效果
+        createConfetti(container);
       }
     }
   }
 
+  // 完成时撒花
+  function createConfetti(container) {
+    const confettiContainer = document.createElement("div");
+    confettiContainer.className = "bubble-confetti";
+
+    const colors = [
+      "#ff6b8a",
+      "#ffa07a",
+      "#ffd700",
+      "#7ecf8b",
+      "#6bb5ff",
+      "#b388ff",
+      "#ff8a80",
+    ];
+    const containerWidth = container.offsetWidth;
+
+    for (let i = 0; i < 30; i++) {
+      const confetti = document.createElement("div");
+      confetti.className = "confetti-piece";
+      confetti.style.left = Math.random() * containerWidth + "px";
+      confetti.style.backgroundColor =
+        colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDelay = Math.random() * 0.5 + "s";
+      confetti.style.animationDuration = 1 + Math.random() * 1 + "s";
+      confettiContainer.appendChild(confetti);
+    }
+
+    container.appendChild(confettiContainer);
+    setTimeout(() => confettiContainer.remove(), 2500);
+  }
+
   function resetGame(container, containerWidth, containerHeight) {
-    // 获取泡泡容器
     const bubbleContainer = container.querySelector(".bubble-container");
     if (bubbleContainer) {
-      // 获取实际宽度
       const actualWidth = bubbleContainer.offsetWidth || containerWidth;
       initBubbles(bubbleContainer, container, actualWidth, containerHeight);
     }
 
-    // 重置进度
     const fill = container.querySelector(".bubble-progress-fill");
     const text = container.querySelector(".bubble-progress-text");
     const complete = container.querySelector(".bubble-complete");
-    
+    const confetti = container.querySelector(".bubble-confetti");
+
     if (fill) fill.style.width = "0%";
     if (text) text.textContent = `0 / ${bubbleCount}`;
     if (complete) complete.remove();
+    if (confetti) confetti.remove();
   }
 
   function insertGame() {
     if (gameInserted) return;
-    
+
     const sidebar = document.querySelector(".sidebar-wrapper");
     if (!sidebar) return;
 
-    const categoriesSection = sidebar.querySelector(".sidebar-section[data-section-name='categories']");
-    
-    if (categoriesSection) {
-      const existingGame = document.getElementById("bubble-pop-game");
-      if (existingGame) return;
+    const existingGame = document.getElementById("bubble-pop-game");
+    if (existingGame) return;
 
-      const game = createBubbleGame();
-      categoriesSection.parentNode.insertBefore(game, categoriesSection.nextSibling);
-      gameInserted = true;
+    const categoriesSection = sidebar.querySelector(
+      ".sidebar-section[data-section-name='categories']"
+    );
+    const game = createBubbleGame();
+
+    if (categoriesSection) {
+      categoriesSection.parentNode.insertBefore(
+        game,
+        categoriesSection.nextSibling
+      );
+    } else {
+      // 降级：插到侧边栏末尾
+      sidebar.appendChild(game);
+    }
+
+    gameInserted = true;
+  }
+
+  function disconnectObserver() {
+    if (currentObserver) {
+      currentObserver.disconnect();
+      currentObserver = null;
     }
   }
 
-  const observer = new MutationObserver(() => {
-    if (!document.getElementById("bubble-pop-game")) {
-      gameInserted = false;
-      insertGame();
-    }
-  });
-
   api.onPageChange(() => {
     setTimeout(() => {
+      if (!document.getElementById("bubble-pop-game")) {
+        gameInserted = false;
+      }
       insertGame();
-      
+
+      disconnectObserver();
       const sidebar = document.querySelector(".sidebar-wrapper");
       if (sidebar) {
-        observer.observe(sidebar, { childList: true, subtree: true });
+        currentObserver = new MutationObserver(() => {
+          if (!document.getElementById("bubble-pop-game")) {
+            gameInserted = false;
+            insertGame();
+          }
+        });
+        currentObserver.observe(sidebar, { childList: true, subtree: true });
       }
-    }, 500);
+    }, 300);
+  });
+
+  // 清理
+  api.cleanupStream(() => {
+    disconnectObserver();
+    if (audioContext) {
+      audioContext.close().catch(() => {});
+      audioContext = null;
+    }
   });
 });

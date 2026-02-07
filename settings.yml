@@ -6,8 +6,8 @@ bubble_game_enabled:
 bubble_count:
   default: 30
   type: integer
-  min: 15
-  max: 50
+  min: 10
+  max: 60
   description: "泡泡数量"
 
 bubble_title:
