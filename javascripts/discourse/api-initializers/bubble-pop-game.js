@@ -10,6 +10,8 @@ export default apiInitializer("1.0.0", (api) => {
   let gameInserted = false;
   let audioContext = null;
   let currentObserver = null;
+  let audioSoundPool = [];
+  const MAX_AUDIO_SOURCES = 8;
 
   // 泡泡颜色
   const bubbleColors = [
@@ -137,7 +139,7 @@ export default apiInitializer("1.0.0", (api) => {
           },
         ],
         {
-          duration: 250 + Math.random() * 200,
+          duration: 200 + Math.random() * 150,
           easing: "ease-out",
           fill: "forwards",
         }
@@ -147,7 +149,7 @@ export default apiInitializer("1.0.0", (api) => {
     }
 
     container.appendChild(splash);
-    setTimeout(() => splash.remove(), 500);
+    setTimeout(() => splash.remove(), 400);
   }
 
   // combo 文字飘出
@@ -179,7 +181,7 @@ export default apiInitializer("1.0.0", (api) => {
     setTimeout(() => el.remove(), 700);
   }
 
-  // 音效 - 复用 AudioContext
+  // 音效 - 复用 AudioContext，使用 OscillatorNode 更高效
   function playPopSound(combo) {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -189,34 +191,42 @@ export default apiInitializer("1.0.0", (api) => {
         ctx.resume();
       }
 
-      const bufferSize = ctx.sampleRate * 0.08;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
+      // 检查并清理已结束的音源
+      audioSoundPool = audioSoundPool.filter((source) => {
+        try {
+          return source.state !== "stopped";
+        } catch {
+          return false;
+        }
+      });
 
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.08));
-      }
+      // 限制同时播放的音效数量
+      if (audioSoundPool.length >= MAX_AUDIO_SOURCES) return;
 
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
+      const now = ctx.currentTime;
+      const duration = 0.06;
 
-      const filter = ctx.createBiquadFilter();
-      filter.type = "bandpass";
-      // combo 越高音调越高
-      filter.frequency.value = 700 + Math.min(combo, 15) * 80 + Math.random() * 200;
-      filter.Q.value = 1.5;
+      // 使用 OscillatorNode 而不是 BufferSource，性能更好
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(
+        800 + Math.min(combo, 15) * 100 + Math.random() * 150,
+        now
+      );
+      osc.frequency.exponentialRampToValueAtTime(200, now + duration);
 
-      const gainNode = ctx.createGain();
-      const volume = Math.min(0.12 + combo * 0.01, 0.25);
-      gainNode.gain.setValueAtTime(volume, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+      const gain = ctx.createGain();
+      const volume = Math.min(0.1 + combo * 0.008, 0.22);
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
 
-      noise.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-      noise.start();
-      noise.stop(ctx.currentTime + 0.08);
+      osc.start(now);
+      osc.stop(now + duration);
+
+      audioSoundPool.push(osc);
     } catch (e) {
       // 静默
     }
