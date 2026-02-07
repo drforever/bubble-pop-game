@@ -152,6 +152,8 @@ html.dark .bubble-pop-game {
     rgba(180, 210, 240, 0.08) 0%,
     transparent 70%
   );
+  contain: layout style paint;
+  will-change: contents;
 }
 
 /* ============================================
@@ -166,6 +168,8 @@ html.dark .bubble-pop-game {
   will-change: transform;
   transform: translateZ(0);
   backface-visibility: hidden;
+  contain: strict;
+  content-visibility: auto;
 
   /* 主高光 */
   &::before {

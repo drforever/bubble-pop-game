@@ -320,7 +320,7 @@ export default apiInitializer("1.0.0", (api) => {
       // 用 pointerdown 而不是 click，响应更快（快 50-100ms）
       bubble.addEventListener("pointerdown", () => {
         popBubble(bubble, bubbleContainer, gameContainer);
-      });
+      }, { passive: true });
       bubbleContainer.appendChild(bubble);
     });
   }
@@ -328,19 +328,19 @@ export default apiInitializer("1.0.0", (api) => {
   function popBubble(bubble, bubbleContainer, gameContainer) {
     if (bubble.classList.contains("popped")) return;
 
-    // 立即标记为 popped，触发破裂动画（最优先级）
+    // 步骤 1：立即标记为 popped + 禁用交互（最快，<1ms）
     bubble.classList.add("popped");
 
-    // combo 计算
-    clearTimeout(comboTimer);
-    comboCount++;
-    comboTimer = setTimeout(() => {
-      comboCount = 0;
-      updateComboBadge(gameContainer);
-    }, COMBO_TIMEOUT);
+    // 步骤 2：异步处理其他逻辑（不阻塞 UI）
+    queueMicrotask(() => {
+      // combo 计算
+      clearTimeout(comboTimer);
+      comboCount++;
+      comboTimer = setTimeout(() => {
+        comboCount = 0;
+        updateComboBadge(gameContainer);
+      }, COMBO_TIMEOUT);
 
-    // 其他效果用 requestAnimationFrame 异步处理，不阻塞动画
-    requestAnimationFrame(() => {
       playPopSound(comboCount);
       createSplashEffect(bubble, bubbleContainer);
       showComboText(bubble, bubbleContainer, comboCount);
