@@ -328,20 +328,22 @@ export default apiInitializer("1.0.0", (api) => {
   function popBubble(bubble, bubbleContainer, gameContainer) {
     if (bubble.classList.contains("popped")) return;
 
-    // 步骤 1：立即标记为 popped + 禁用交互（最快，<1ms）
+    // combo 计算（快速）
+    clearTimeout(comboTimer);
+    comboCount++;
+    comboTimer = setTimeout(() => {
+      comboCount = 0;
+      updateComboBadge(gameContainer);
+    }, COMBO_TIMEOUT);
+
+    // 立即标记为 popped，触发破裂动画
     bubble.classList.add("popped");
 
-    // 步骤 2：异步处理其他逻辑（不阻塞 UI）
-    queueMicrotask(() => {
-      // combo 计算
-      clearTimeout(comboTimer);
-      comboCount++;
-      comboTimer = setTimeout(() => {
-        comboCount = 0;
-        updateComboBadge(gameContainer);
-      }, COMBO_TIMEOUT);
+    // 音效（无阻塞）
+    playPopSound(comboCount);
 
-      playPopSound(comboCount);
+    // 效果延迟到下一帧，不阻塞主线程
+    requestAnimationFrame(() => {
       createSplashEffect(bubble, bubbleContainer);
       showComboText(bubble, bubbleContainer, comboCount);
       updateComboBadge(gameContainer);

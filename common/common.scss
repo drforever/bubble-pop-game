@@ -168,7 +168,6 @@ html.dark .bubble-pop-game {
   will-change: transform;
   transform: translateZ(0);
   backface-visibility: hidden;
-  contain: strict;
   content-visibility: auto;
 
   /* 主高光 */
@@ -362,7 +361,7 @@ html.dark .bubble {
 }
 
 .bubble.popped {
-  animation: pop-burst 0.08s ease-out forwards;
+  animation: pop-burst 0.08s ease-out forwards !important;
   pointer-events: none;
 }
 
