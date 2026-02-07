@@ -431,7 +431,25 @@ export default apiInitializer("1.0.0", (api) => {
     if (confetti) confetti.remove();
   }
 
+  function isAdminRoute() {
+    return /^\/admin(\/|$)/.test(window.location.pathname);
+  }
+
+  function removeGame() {
+    const existingGame = document.getElementById("bubble-pop-game");
+    if (existingGame) {
+      existingGame.remove();
+      gameInserted = false;
+    }
+  }
+
   function insertGame() {
+    // 管理员后台不显示游戏
+    if (isAdminRoute()) {
+      removeGame();
+      return;
+    }
+
     if (gameInserted) return;
 
     const sidebar = document.querySelector(".sidebar-wrapper");
