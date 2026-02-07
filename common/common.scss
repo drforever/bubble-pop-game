@@ -162,9 +162,10 @@ html.dark .bubble-pop-game {
   position: absolute;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.15s ease;
   animation: float 4s ease-in-out infinite;
   will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 
   /* 主高光 */
   &::before {
@@ -203,12 +204,12 @@ html.dark .bubble-pop-game {
   }
 
   &:hover {
-    transform: scale(1.12);
+    transform: scale(1.12) translateZ(0);
     filter: brightness(1.05);
   }
 
   &:active {
-    transform: scale(0.92);
+    transform: scale(0.92) translateZ(0);
   }
 }
 
@@ -347,24 +348,17 @@ html.dark .bubble {
 /* 破裂 */
 @keyframes pop-burst {
   0% {
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
     opacity: 1;
-    filter: brightness(1);
-  }
-  30% {
-    transform: scale(1.35);
-    opacity: 0.7;
-    filter: brightness(1.4);
   }
   100% {
-    transform: scale(0);
+    transform: scale(0) translateZ(0);
     opacity: 0;
-    filter: brightness(2);
   }
 }
 
 .bubble.popped {
-  animation: pop-burst 0.12s ease-out forwards;
+  animation: pop-burst 0.08s ease-out forwards;
   pointer-events: none;
 }
 

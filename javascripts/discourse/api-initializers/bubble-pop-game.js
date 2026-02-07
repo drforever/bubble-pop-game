@@ -10,8 +10,8 @@ export default apiInitializer("1.0.0", (api) => {
   let gameInserted = false;
   let audioContext = null;
   let currentObserver = null;
-  let audioSoundPool = [];
-  const MAX_AUDIO_SOURCES = 8;
+  let audioSoundPool = new Set();
+  const MAX_AUDIO_SOURCES = 12;
 
   // 泡泡颜色
   const bubbleColors = [
@@ -181,7 +181,7 @@ export default apiInitializer("1.0.0", (api) => {
     setTimeout(() => el.remove(), 700);
   }
 
-  // 音效 - 复用 AudioContext，使用 OscillatorNode 更高效
+  // 音效 - 直接合成，无缓冲，极速响应
   function playPopSound(combo) {
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -191,42 +191,36 @@ export default apiInitializer("1.0.0", (api) => {
         ctx.resume();
       }
 
-      // 检查并清理已结束的音源
-      audioSoundPool = audioSoundPool.filter((source) => {
-        try {
-          return source.state !== "stopped";
-        } catch {
-          return false;
-        }
-      });
+      // 检查音源池大小
+      if (audioSoundPool.size >= MAX_AUDIO_SOURCES) return;
 
-      // 限制同时播放的音效数量
-      if (audioSoundPool.length >= MAX_AUDIO_SOURCES) return;
-
+      const duration = 0.05;
       const now = ctx.currentTime;
-      const duration = 0.06;
 
-      // 使用 OscillatorNode 而不是 BufferSource，性能更好
+      // 创建振荡器
       const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(
-        800 + Math.min(combo, 15) * 100 + Math.random() * 150,
-        now
-      );
-      osc.frequency.exponentialRampToValueAtTime(200, now + duration);
+      osc.type = "sine";
+      const freq = 600 + Math.min(combo, 12) * 120 + Math.random() * 120;
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + duration);
 
+      // 增益包络
       const gain = ctx.createGain();
-      const volume = Math.min(0.1 + combo * 0.008, 0.22);
-      gain.gain.setValueAtTime(volume, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+      const vol = Math.min(0.08 + combo * 0.006, 0.2);
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
+      // 连接
       osc.connect(gain);
       gain.connect(ctx.destination);
 
+      // 播放
       osc.start(now);
       osc.stop(now + duration);
 
-      audioSoundPool.push(osc);
+      // 添加到池，并在停止后自动移除
+      audioSoundPool.add(osc);
+      osc.onended = () => audioSoundPool.delete(osc);
     } catch (e) {
       // 静默
     }
@@ -323,14 +317,19 @@ export default apiInitializer("1.0.0", (api) => {
       bubble.style.animationDelay = pos.animationDelay + "s";
       bubble.dataset.index = index;
 
-      bubble.onclick = () =>
+      // 用 pointerdown 而不是 click，响应更快（快 50-100ms）
+      bubble.addEventListener("pointerdown", () => {
         popBubble(bubble, bubbleContainer, gameContainer);
+      });
       bubbleContainer.appendChild(bubble);
     });
   }
 
   function popBubble(bubble, bubbleContainer, gameContainer) {
     if (bubble.classList.contains("popped")) return;
+
+    // 立即标记为 popped，触发破裂动画（最优先级）
+    bubble.classList.add("popped");
 
     // combo 计算
     clearTimeout(comboTimer);
@@ -340,13 +339,14 @@ export default apiInitializer("1.0.0", (api) => {
       updateComboBadge(gameContainer);
     }, COMBO_TIMEOUT);
 
-    playPopSound(comboCount);
-    createSplashEffect(bubble, bubbleContainer);
-    showComboText(bubble, bubbleContainer, comboCount);
-    updateComboBadge(gameContainer);
-
-    bubble.classList.add("popped");
-    updateProgress(gameContainer);
+    // 其他效果用 requestAnimationFrame 异步处理，不阻塞动画
+    requestAnimationFrame(() => {
+      playPopSound(comboCount);
+      createSplashEffect(bubble, bubbleContainer);
+      showComboText(bubble, bubbleContainer, comboCount);
+      updateComboBadge(gameContainer);
+      updateProgress(gameContainer);
+    });
   }
 
   function updateComboBadge(container) {
