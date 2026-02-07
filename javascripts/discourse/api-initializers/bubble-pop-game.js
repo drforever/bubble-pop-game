@@ -385,7 +385,19 @@ export default apiInitializer("1.0.0", (api) => {
       if (progress && !container.querySelector(".bubble-complete")) {
         const complete = document.createElement("div");
         complete.className = "bubble-complete";
-        complete.textContent = "🎉 全部捏完啦！感觉好解压~";
+        
+        // 随机选择一个完成文案
+        const completionMessages = [
+          "🎉 全部捏完啦！",
+          "✨ 疗愈成功！压力消散~",
+          "🫧 泡泡全消灭！",
+          "😌 心情舒畅！再来一遍？",
+          "🎊 完美无缺！",
+          "💆 放松一下，感觉不错~",
+          "🌟 今天的解压达成！",
+          "✅ 全部搞定！"
+        ];
+        complete.textContent = completionMessages[Math.floor(Math.random() * completionMessages.length)];
         progress.appendChild(complete);
 
         // 撒花效果
