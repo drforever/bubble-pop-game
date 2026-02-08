@@ -476,13 +476,24 @@ export default apiInitializer("1.0.0", (api) => {
 
     if (gameInserted) return;
 
-    const sidebar = document.querySelector(".sidebar-wrapper");
-    if (!sidebar) return;
+    // 精确定位：插入到 sidebar-sections 内部
+    const sidebarSections = document.querySelector(
+      ".sidebar-wrapper .sidebar-sections"
+    );
+    if (!sidebarSections) return;
 
     const existingGame = document.getElementById("bubble-pop-game");
-    if (existingGame) return;
+    if (existingGame) {
+      // 游戏存在但可能在错误的位置，检查父元素
+      if (existingGame.closest(".sidebar-sections") === sidebarSections) {
+        gameInserted = true;
+        return;
+      }
+      // 位置不对，移除重建
+      existingGame.remove();
+    }
 
-    const categoriesSection = sidebar.querySelector(
+    const categoriesSection = sidebarSections.querySelector(
       ".sidebar-section[data-section-name='categories']"
     );
     const game = createBubbleGame();
@@ -493,8 +504,7 @@ export default apiInitializer("1.0.0", (api) => {
         categoriesSection.nextSibling
       );
     } else {
-      // 降级：插到侧边栏末尾
-      sidebar.appendChild(game);
+      sidebarSections.appendChild(game);
     }
 
     gameInserted = true;
@@ -518,9 +528,18 @@ export default apiInitializer("1.0.0", (api) => {
       const sidebar = document.querySelector(".sidebar-wrapper");
       if (sidebar) {
         currentObserver = new MutationObserver(() => {
-          if (!document.getElementById("bubble-pop-game")) {
+          const game = document.getElementById("bubble-pop-game");
+          if (!game) {
             gameInserted = false;
             insertGame();
+          } else {
+            // 如果游戏不在 sidebar-sections 内部，说明位置错了
+            const sections = sidebar.querySelector(".sidebar-sections");
+            if (sections && !sections.contains(game)) {
+              game.remove();
+              gameInserted = false;
+              insertGame();
+            }
           }
         });
         currentObserver.observe(sidebar, { childList: true, subtree: true });
